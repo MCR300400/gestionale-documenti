@@ -1,7 +1,12 @@
 <template>
-  <div class="home">
-    <h1>Document Management</h1>
 
+<header class="home-header">
+      <h1>Dashboard Amministratore</h1>
+      <button @click="logoutUser" class="logout-button">Logout</button>
+    </header>
+
+
+  <div class="home">
     <div class="card-container">
       <!-- Card 1: Download Documenti -->
       <div class="card" @click="goToPage('/download-documents')">
@@ -37,17 +42,53 @@
 </template>
 
 <script setup>
+import { useAuthStore } from '@/store/AuthStore';
 import { useRouter } from 'vue-router';
 
 const router = useRouter();
-
+const authStore = useAuthStore();
 // Funzione per reindirizzare a una pagina
 const goToPage = (route) => {
   router.push(route);
 };
+
+const logoutUser = () => {
+  authStore.logout();
+}
+
 </script>
 
 <style scoped>
+
+.logout-button {
+  border-radius: 4px;
+  background-color: red;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+
+.home-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.home-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.home-header h1 {
+  margin: 0;
+  font-size: 24px;
+}
 .home {
 
   margin: 0 auto;
@@ -77,6 +118,8 @@ const goToPage = (route) => {
   transform: translateY(-5px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Ombra più scura al passaggio del mouse */
 }
+
+
 
 .large-card {
   margin-bottom: 20px;

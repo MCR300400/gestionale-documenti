@@ -15,7 +15,7 @@ export const useDocumentStore = defineStore('documentStore', {
         this.uploadStatus = 'No files selected for upload.';
         return;
       }
-
+ 
       const formData = new FormData();
       this.selectedFiles.forEach((file) => {
         formData.append('files', file);
@@ -39,7 +39,12 @@ export const useDocumentStore = defineStore('documentStore', {
     },
     async fetchDocumentsDownload() {
       try {
-        const response = await fetch('/document/listFiles');
+        const token = localStorage.getItem("authToken")
+        const response = await fetch('/document/listFiles',
+          {
+            headers: {'Authorization': token },
+          }
+        );
         if (response.ok) {
           const fileNames = await response.json();
           this.documents = fileNames.map(name => ({
@@ -73,7 +78,12 @@ export const useDocumentStore = defineStore('documentStore', {
     },
     async fetchDocument(id) {
       try {
-        const response = await fetch(`/document/documentinfo/${id}`);
+        const token = localStorage.getItem("authToken")
+        const response = await fetch(`/document/documentinfo/${id}`,
+          {
+            headers: {'Authorization': token },
+          }
+        );
         if (response.ok) {
           return await response.json();
         } else {
@@ -85,9 +95,10 @@ export const useDocumentStore = defineStore('documentStore', {
     },
     async createDocument(document) {
       try {
+        const token = localStorage.getItem("authToken")
         const response = await fetch('/document/documentinfo', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Authorization': token  },
           body: JSON.stringify(document),
         });
         if (response.ok) {
@@ -101,9 +112,10 @@ export const useDocumentStore = defineStore('documentStore', {
     },
     async updateDocument(document) {
       try {
+        const token = localStorage.getItem("authToken")
         const response = await fetch('/document/documentinfo', {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Authorization': token  },
           body: JSON.stringify(document),
         });
         if (response.ok) {
@@ -117,8 +129,10 @@ export const useDocumentStore = defineStore('documentStore', {
     },
     async deleteDocument(id) {
       try {
+        const token = localStorage.getItem("authToken")
         const response = await fetch(`/document/documentinfo/${id}`, {
           method: 'DELETE',
+          headers: {'Authorization': token },
         });
         if (response.ok) {
           await this.fetchDocuments();

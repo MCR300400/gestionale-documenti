@@ -1,12 +1,14 @@
+import { useAuthStore } from '@/store/AuthStore';
 import { usePopupStore } from '@/store/PopupStore';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
+import { useRouter } from 'vue-router';
 
 export const useAdminStore = defineStore('admin', () => {
   const users = ref([]);
   const products = ref([]);
   const interviews = ref([]);
-  
+
   const filters = ref({
     name: '',
     type: '',
@@ -16,15 +18,29 @@ export const useAdminStore = defineStore('admin', () => {
   });
 
   const popupStore = usePopupStore();
+  const authStore = useAuthStore();
+  const router = useRouter();
+
 
   // Carica gli utenti dal server
   const loadUsers = async () => {
     try {
-      const response = await fetch('/admin/users');
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('/admin/users', {
+        headers: {
+          'Authorization': token // Invia il token nell'intestazione senza 'Bearer'
+        }
+      });
       if (!response.ok) {
+        authStore.logout();
+        router.push("/");
         throw new Error(`Failed to fetch users: ${response.statusText}`);
+
+        
       }
       users.value = await response.json();
+      console.log("users: " + users.value)
+
     } catch (error) {
       console.error('Error loading users:', error);
       popupStore.showPopup('Failed to load users.', '#ff4d4f', '#fff');  // Popup di fallimento
@@ -42,6 +58,8 @@ export const useAdminStore = defineStore('admin', () => {
         }
       });
       if (!response.ok) {
+        authStore.logout();
+        router.push("/");
         throw new Error(`Failed to fetch events: ${response.statusText}`);
       }
       const data = await response.json();
@@ -64,7 +82,9 @@ export const useAdminStore = defineStore('admin', () => {
         }
       });
       if (!response.ok) {
-        throw new Error(`Failed to fetch interviews: ${response.statusText}`);
+        authStore.logout();
+        router.push("/");
+        popupStore.showPopup('Session expired.', '#ff4d4f', '#fff');
       }
       interviews.value = await response.json();
     } catch (error) {
@@ -146,13 +166,16 @@ export const useAdminStore = defineStore('admin', () => {
   // Crea un nuovo utente
   const createUser = async (user) => {
     try {
+      const token = localStorage.getItem("authToken")
       const response = await fetch('/admin/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': token },
         body: JSON.stringify(user)
       });
       if (!response.ok) {
-        throw new Error(`Failed to create user: ${response.statusText}`);
+        authStore.logout();
+        router.push("/");
+        popupStore.showPopup('Session expired.', '#ff4d4f', '#fff');
       }
       await loadUsers();
       popupStore.showPopup('User created successfully!', '#52c41a', '#fff');  // Popup di successo
@@ -166,12 +189,15 @@ export const useAdminStore = defineStore('admin', () => {
   const updateUser = async (user) => {
     console.log(user)
     try {
+      const token = localStorage.getItem("authToken")
       const response = await fetch('/admin/users', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' ,'Authorization': token },
         body: JSON.stringify({id: user.id, email: user.email, password: user.password, role: user.role})
       });
       if (!response.ok) {
+        authStore.logout();
+        router.push("/");
         throw new Error(`Failed to update user: ${response.statusText}`);
       }
       await loadUsers(); // Ricarica gli utenti
@@ -185,10 +211,15 @@ export const useAdminStore = defineStore('admin', () => {
   // Elimina un utente
   const deleteUser = async (email) => {
     try {
+      const token = localStorage.getItem("authToken")
+      console.log("email: " + email)
       const response = await fetch(`/admin/users/${email}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: { 'Authorization': token },
       });
       if (!response.ok) {
+        authStore.logout();
+        router.push("/");
         throw new Error(`Failed to delete user: ${response.statusText}`);
       }
       await loadUsers(); // Ricarica gli utenti
@@ -202,12 +233,15 @@ export const useAdminStore = defineStore('admin', () => {
   // Crea un nuovo prodotto (evento)
   const createEvent = async (event) => {
     try {
+      const token = localStorage.getItem("authToken")
       const response = await fetch('/admin/events', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': token },
         body: JSON.stringify(event)
       });
       if (!response.ok) {
+        authStore.logout();
+        router.push("/");
         throw new Error(`Failed to create event: ${response.statusText}`);
       }
       await loadEvents();
@@ -221,12 +255,15 @@ export const useAdminStore = defineStore('admin', () => {
   // Modifica un prodotto (evento) esistente
   const updateEvent = async (event) => {
     try {
+      const token = localStorage.getItem("authToken")
       const response = await fetch('/admin/events', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' ,'Authorization': token },
         body: JSON.stringify(event)
       });
       if (!response.ok) {
+        authStore.logout();
+        router.push("/");
         throw new Error(`Failed to update event: ${response.statusText}`);
       }
       await loadEvents();
@@ -237,13 +274,20 @@ export const useAdminStore = defineStore('admin', () => {
     }
   };
 
+
+
   // Elimina un prodotto (evento)
   const deleteEvent = async (id) => {
     try {
+      const token = localStorage.getItem("authToken")
+      console.log("id: " + id)
       const response = await fetch(`/admin/events/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {'Authorization': token },
       });
       if (!response.ok) {
+        authStore.logout();
+        router.push("/");
         throw new Error(`Failed to delete event: ${response.statusText}`);
       }
       await loadEvents();
@@ -254,15 +298,19 @@ export const useAdminStore = defineStore('admin', () => {
     }
   };
 
+
   // Crea un nuovo colloquio
   const createInterview = async (interview) => {
     try {
+      const token = localStorage.getItem("authToken")
       const response = await fetch('/admin/colloquio', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': token },
         body: JSON.stringify(interview)
       });
       if (!response.ok) {
+        authStore.logout();
+        router.push("/");
         throw new Error(`Failed to create interview: ${response.statusText}`);
       }
       await loadInterviews();
@@ -277,12 +325,16 @@ export const useAdminStore = defineStore('admin', () => {
   const updateInterview = async (interview) => {
     console.log(interview)
     try {
+      
+      const token = localStorage.getItem("authToken")
       const response = await fetch('/admin/colloquio', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': token },
         body: JSON.stringify(interview)
       });
       if (!response.ok) {
+        authStore.logout();
+        router.push("/");
         throw new Error(`Failed to update interview: ${response.statusText}`);
       }
       await loadInterviews();
@@ -296,10 +348,15 @@ export const useAdminStore = defineStore('admin', () => {
   // Elimina un colloquio
   const deleteInterview = async (id) => {
     try {
+      const token = localStorage.getItem("authToken")
+      console.log("interview id: " + id)
       const response = await fetch(`/admin/colloquio/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {'Authorization': token }
       });
       if (!response.ok) {
+        authStore.logout();
+        router.push("/");
         throw new Error(`Failed to delete interview: ${response.statusText}`);
       }
       await loadInterviews();
